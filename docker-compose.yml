@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: etl-migration-api
+    ports:
+      - "${PORT}:${PORT}"
+      - "${DEBUGPY_PORT:-5678}:${DEBUGPY_PORT:-5678}"
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - DEBUG=${DEBUG:-true}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - PORT=${PORT}
+      - DEBUGPY_PORT=${DEBUGPY_PORT:-5678}
+      - DEBUGPY_WAIT_FOR_CLIENT=${DEBUGPY_WAIT_FOR_CLIENT:-false}
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - etl-network
+    command: >
+      sh -c "EXTRA_FLAG=''; if [ \"${DEBUGPY_WAIT_FOR_CLIENT:-false}\" = \"true\" ]; then EXTRA_FLAG='--wait-for-client'; fi;
+      python -Xfrozen_modules=off -m debugpy --listen 0.0.0.0:${DEBUGPY_PORT:-5678} ${EXTRA_FLAG} -m uvicorn src.main:app --host 0.0.0.0 --port ${PORT} --reload"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:$$PORT/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  etl-network:
+    driver: bridge
