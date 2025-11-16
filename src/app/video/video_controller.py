@@ -1,7 +1,7 @@
 import logging
 from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import StreamingResponse
 
 from src.app.common.common_schema import ErrorSchema
@@ -86,3 +86,19 @@ async def stream_video(
     except Exception as exc:
         logger.exception("Failed to stream video '%s'", video_id)
         raise HTTPException(status_code=500, detail="Error streaming video") from exc
+
+
+@router.websocket("/ws/{video_id}/detections")
+async def detection_metrics_ws(websocket: WebSocket, video_id: str) -> None:
+    service = VideoService()
+
+    await websocket.accept()
+
+    try:
+        async for metrics in service.subscribe_detection_metrics(video_id):
+            await websocket.send_json(metrics.model_dump(mode="json"))
+    except WebSocketDisconnect:
+        logger.info("Detection metrics websocket disconnected for video '%s'", video_id)
+    except Exception:  # noqa: BLE001
+        logger.exception("Detection metrics websocket error for video '%s'", video_id)
+        await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Internal server error")

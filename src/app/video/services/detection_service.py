@@ -1,6 +1,13 @@
+from __future__ import annotations
+
+from collections import defaultdict
+from collections.abc import Mapping
+
 import cv2
 import numpy as np
 from ultralytics import YOLO
+
+from src.app.video.interfaces.detection_metrics import DetectionSummary
 
 
 class DetectionService:
@@ -20,26 +27,34 @@ class DetectionService:
     def __init__(self, model: YOLO, confidence_threshold: float) -> None:
         self._model: YOLO = model
         self._confidence_threshold: float = confidence_threshold
-        self._labels: dict[int, str] = model.names
+        self._labels: Mapping[int, str] = model.names
 
-    def detect_and_draw(self, frame: np.ndarray) -> np.ndarray:
+    def detect_and_draw(self, frame: np.ndarray) -> tuple[np.ndarray, DetectionSummary]:
         results = self._model(frame, verbose=False, conf=self._confidence_threshold)
 
         detections = results[0].boxes
+        label_counts: dict[str, int] = defaultdict(int)
 
         for i in range(len(detections)):
             xyxy_tensor = detections[i].xyxy.cpu()
             xyxy = xyxy_tensor.numpy().squeeze()
             xmin, ymin, xmax, ymax = xyxy.astype(int)
 
-            classidx = int(detections[i].cls.item())
-            classname = self._labels[classidx]
+            class_index = int(detections[i].cls.item())
+            classname = self._labels[class_index]
             conf = detections[i].conf.item()
 
             if conf >= self._confidence_threshold:
-                self._draw_bounding_box(frame, xmin, ymin, xmax, ymax, classname, conf, classidx)
+                label_counts[classname] += 1
+                self._draw_bounding_box(frame, xmin, ymin, xmax, ymax, classname, conf, class_index)
 
-        return frame
+        summary = DetectionSummary(
+            total_objects=sum(label_counts.values()),
+            person_count=label_counts.get("person", 0),
+            label_counts=dict(label_counts),
+        )
+
+        return frame, summary
 
     def _draw_bounding_box(
         self,
@@ -50,9 +65,9 @@ class DetectionService:
         ymax: int,
         classname: str,
         confidence: float,
-        classidx: int,
+        class_index: int,
     ) -> None:
-        color = self.BBOX_COLORS[classidx % len(self.BBOX_COLORS)]
+        color = self.BBOX_COLORS[class_index % len(self.BBOX_COLORS)]
 
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
 

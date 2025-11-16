@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
 
+from src.app.video.interfaces.detection_metrics import DetectionMetrics, DetectionSummary
 from src.app.video.services.detection_service import DetectionService
+from src.app.video.services.metrics_service import DetectionMetricsService
 from src.app.video.services.model_service import ModelService
 
 if TYPE_CHECKING:
@@ -19,14 +22,18 @@ class VideoStreamService:
         self,
         model_service: ModelService,
         video_path: Path,
+        video_id: str,
         confidence_threshold: float,
+        metrics_service: DetectionMetricsService | None = None,
         resolution: tuple[int, int] | None = None,
     ) -> None:
         self._model_service: ModelService = model_service
         self._video_path: Path = video_path
+        self._video_id: str = video_id
         self._confidence_threshold: float = confidence_threshold
         self._resolution: tuple[int, int] | None = resolution
         self._cap: cv2.VideoCapture | None = None
+        self._metrics_service: DetectionMetricsService | None = metrics_service
 
     async def stream_frames(self) -> AsyncGenerator[bytes, None]:
         loop = asyncio.get_event_loop()
@@ -76,9 +83,11 @@ class VideoStreamService:
             )
             frame = resized_frame
 
-        processed_frame = await loop.run_in_executor(
+        processed_frame, summary = await loop.run_in_executor(
             None, detection_service.detect_and_draw, frame.copy()
         )
+
+        await self._publish_metrics(summary)
 
         return processed_frame
 
@@ -91,3 +100,15 @@ class VideoStreamService:
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(None, self._cap.release)
             self._cap = None
+
+    async def _publish_metrics(self, summary: DetectionSummary) -> None:
+        if self._metrics_service is None:
+            return
+
+        metrics = DetectionMetrics.from_summary(
+            video_id=self._video_id,
+            summary=summary,
+            timestamp=datetime.now(datetime.UTC),
+        )
+
+        await self._metrics_service.publish(metrics)
