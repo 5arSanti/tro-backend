@@ -5,7 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.core.config import settings
-from src.app.core.middleware import MaxRequestSizeMiddleware
 from src.app.health.health_controller import router as health_router
 from src.app.video.video_controller import router as video_router
 
@@ -31,9 +30,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
-    # Add middleware to limit request body size to 2GB
-    app.add_middleware(MaxRequestSizeMiddleware)
 
     app.include_router(health_router, prefix=settings.api_v1_prefix)
     app.include_router(video_router, prefix=settings.api_v1_prefix)
