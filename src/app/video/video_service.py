@@ -53,7 +53,7 @@ class VideoService:
         resolution: tuple[int, int] | None = None
         if config.resolution:
             try:
-                width, height = map(int, config.resolution.split("x"))
+                width, height = map[int](int, config.resolution.split("x"))
                 resolution = (width, height)
             except ValueError:
                 logger.warning("Invalid resolution '%s'. Using original video dimensions.", config.resolution)
