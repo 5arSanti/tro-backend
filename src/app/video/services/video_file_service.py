@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.app.common.constants import VIDEO_ASSETS_PATH
+
 if TYPE_CHECKING:
     pass
 
@@ -11,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class VideoFileService:
-    def __init__(self, assets_path: Path) -> None:
-        self._assets_path: Path = assets_path
+    def __init__(self, assets_path: Path | None = None) -> None:
+        self._assets_path: Path = assets_path or VIDEO_ASSETS_PATH
         self._video_extensions: set[str] = {".mp4", ".avi", ".mov", ".mkv", ".wmv"}
 
     def get_assets_path(self) -> Path:

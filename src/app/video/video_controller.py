@@ -20,7 +20,6 @@ router: APIRouter = Controller("/videos", tags=["Videos"])
     responses={200: {"model": VideoListSchema}},
 )
 async def list_videos(settings: SettingsDep) -> VideoListSchema:
-    """Get list of available videos."""
     try:
         service = VideoService(settings)
         result = service.get_available_videos()

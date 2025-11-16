@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:  # pragma: no cover - import only for type checking
-    from ultralytics import YOLO
+from src.app.common.constants import YOLO_MODEL_PATH
+
+YOLOType = Any
 
 
 class ModelService:
     _instance: ModelService | None = None
-    _model: "YOLO" | None = None
-    _model_path: Path | None = None
+    _model: YOLOType | None = None
+    _model_path: Path = YOLO_MODEL_PATH
 
     def __new__(cls) -> ModelService:
         if cls._instance is None:
@@ -20,16 +22,17 @@ class ModelService:
     def set_model_path(self, model_path: Path) -> None:
         self._model_path = model_path
 
-    def get_model(self) -> "YOLO":
+    def _load_model_class(self) -> Any:
+        module = importlib.import_module("ultralytics")
+        return module.YOLO
+
+    def get_model(self) -> YOLOType:
         if self._model is None:
-            if self._model_path is None:
-                raise RuntimeError("Model service not initialized. Call set_model_path() first.")
             if not self._model_path.exists():
                 raise FileNotFoundError(f"Model not found at {self._model_path}")
 
-            from ultralytics import YOLO  # Imported lazily to avoid heavy import at startup
-
-            self._model = YOLO(str(self._model_path), task="detect")
+            yolo_cls = self._load_model_class()
+            self._model = yolo_cls(str(self._model_path), task="detect")
         return self._model
 
     def is_loaded(self) -> bool:
@@ -37,7 +40,6 @@ class ModelService:
 
     def reload(self) -> None:
         self._model = None
-        if self._model_path is not None:
-            from ultralytics import YOLO  # Imported lazily to avoid heavy import at startup
-
-            self._model = YOLO(str(self._model_path), task="detect")
+        if self._model_path.exists():
+            yolo_cls = self._load_model_class()
+            self._model = yolo_cls(str(self._model_path), task="detect")

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING
 
+from src.app.common.constants import PROJECT_ROOT, VIDEO_ASSETS_PATH, YOLO_MODEL_PATH
 from src.app.core.config import Settings
 from src.app.video.services.model_service import ModelService
 from src.app.video.services.video_file_service import VideoFileService
@@ -19,20 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 class VideoService:
-    """Main service coordinating video-related operations."""
-
     def __init__(self, settings: Settings) -> None:
         self._settings: Settings = settings
 
-        self._project_root: Path = Path(__file__).resolve().parents[4]
-        self._model_path: Path = (
-            self._project_root / "yolo-train-routes-optimization" / "my_model" / "my_model.pt"
-        )
-        self._assets_path: Path = self._project_root / "yolo-train-routes-optimization" / "assets"
+        self._project_root = PROJECT_ROOT
+        self._model_path = YOLO_MODEL_PATH
+        self._assets_path = VIDEO_ASSETS_PATH
 
         self._model_service: ModelService = ModelService()
-        self._model_service.set_model_path(self._model_path)
-
         self._video_file_service: VideoFileService = VideoFileService(self._assets_path)
 
     def get_available_videos(self) -> VideoListSchema:
