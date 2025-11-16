@@ -6,9 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.core.config import settings
 from src.app.core.middleware import MaxRequestSizeMiddleware
-from src.app.file_classification.file_classification_controller import (
-    router as file_classification_router,
-)
 from src.app.health.health_controller import router as health_router
 
 
