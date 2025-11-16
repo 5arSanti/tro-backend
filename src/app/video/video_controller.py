@@ -51,8 +51,8 @@ async def stream_video_with_detection(
             confidence_threshold=confidence_threshold, resolution=resolution
         )
 
-        def generate() -> bytes:
-            for frame in service.process_video_stream(video_id, config):
+        async def generate() -> bytes:
+            async for frame in service.process_video_stream(video_id, config):
                 yield b"--frame\r\n"
                 yield b"Content-Type: image/jpeg\r\n\r\n"
                 yield frame
