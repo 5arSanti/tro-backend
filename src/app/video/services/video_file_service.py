@@ -28,12 +28,13 @@ class VideoFileService:
         raise FileNotFoundError(f"Video {video_id} not found in {self._assets_path}")
 
     def list_video_files(self) -> list[Path]:
+        """List all video files in the assets directory."""
         if not self._assets_path.exists():
             logger.warning("Assets path %s does not exist", self._assets_path)
             return []
 
         try:
-            all_files = list[Path](self._assets_path.glob("*"))
+            all_files = list(self._assets_path.glob("*"))
         except Exception:
             logger.exception("Failed to read assets directory %s", self._assets_path)
             raise
