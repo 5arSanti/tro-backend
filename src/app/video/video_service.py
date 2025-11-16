@@ -31,16 +31,7 @@ class VideoService:
         self._assets_path: Path = self._project_root / "yolo-train-routes-optimization" / "assets"
 
         self._model_service: ModelService = ModelService()
-        try:
-            self._model_service.initialize(self._model_path)
-        except FileNotFoundError:
-            logger.warning(
-                "Model file not found at %s. Video streaming will be unavailable until the model is provided.",
-                self._model_path,
-            )
-        except Exception:  # pragma: no cover - unexpected initialisation errors
-            logger.exception("Unexpected error initialising the YOLO model service.")
-            raise
+        self._model_service.set_model_path(self._model_path)
 
         self._video_file_service: VideoFileService = VideoFileService(self._assets_path)
 
