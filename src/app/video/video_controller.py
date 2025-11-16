@@ -18,8 +18,16 @@ router: APIRouter = Controller("/videos", tags=["Videos"])
     responses={200: {"model": VideoListSchema}},
 )
 async def list_videos(settings: SettingsDep) -> VideoListSchema:
-    service = VideoService(settings)
-    return service.get_available_videos()
+    """Get list of available videos."""
+    try:
+        service = VideoService(settings)
+        result = service.get_available_videos()
+        return result
+    except Exception as e:
+        print(f"ERROR in list_videos endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error listing videos: {str(e)}") from e
 
 
 # @router.get(

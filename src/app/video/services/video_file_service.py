@@ -31,12 +31,18 @@ class VideoFileService:
         if not self._assets_path.exists():
             return []
 
-        video_files: list[Path] = []
-        for video_file in sorted(self._assets_path.glob("*")):
-            if video_file.suffix.lower() in self._video_extensions and video_file.is_file():
-                video_files.append(video_file)
+        try:
+            all_files = list[Path](self._assets_path.glob("*"))
 
-        return video_files
+            video_files: list[Path] = []
+            for video_file in sorted(all_files):
+                if video_file.suffix.lower() in self._video_extensions and video_file.is_file():
+                    video_files.append(video_file)
+
+            return video_files
+        except Exception as e:
+            raise Exception(f"Error listing video files: {e}") from e
 
     def get_video_id(self, video_path: Path) -> str:
-        return video_path.stem
+        video_id = video_path.stem
+        return video_id

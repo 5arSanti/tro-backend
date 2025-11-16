@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -14,6 +15,8 @@ from src.app.video.video_schema import DetectionConfigSchema, VideoInfoSchema, V
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
+logger = logging.getLogger(__name__)
+
 
 class VideoService:
     def __init__(self, settings: Settings) -> None:
@@ -24,25 +27,31 @@ class VideoService:
         assets_path = project_root / "yolo-train-routes-optimization" / "assets"
 
         self._model_service: ModelService = ModelService()
-        self._model_service.initialize(model_path)
+        try:
+            self._model_service.initialize(model_path)
+        except Exception as e:
+            logger.warning(f"Model service initialization failed: {e}")
 
         self._video_file_service: VideoFileService = VideoFileService(assets_path)
 
     def get_available_videos(self) -> VideoListSchema:
-        video_files = self._video_file_service.list_video_files()
+        try:
+            video_files = self._video_file_service.list_video_files()
 
-        videos: list[VideoInfoSchema] = []
-        for video_file in video_files:
-            video_id = self._video_file_service.get_video_id(video_file)
-            videos.append(
-                VideoInfoSchema(
-                    id=video_id,
-                    filename=video_file.name,
-                    name=f"Video {video_id.replace('video', '')}",
+            videos: list[VideoInfoSchema] = []
+            for video_file in video_files:
+                video_id = self._video_file_service.get_video_id(video_file)
+                videos.append(
+                    VideoInfoSchema(
+                        id=video_id,
+                        filename=video_file.name,
+                        name=f"Video {video_id.replace('video', '')}",
+                    )
                 )
-            )
 
-        return VideoListSchema(videos=videos)
+            return VideoListSchema(videos=videos)
+        except Exception:
+            return VideoListSchema(videos=[])
 
     async def process_video_stream(
         self, video_id: str, config: DetectionConfigSchema
