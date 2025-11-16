@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(health_router, prefix=settings.api_v1_prefix)
-    # app.include_router(video_router, prefix=settings.api_v1_prefix)
+    app.include_router(video_router, prefix=settings.api_v1_prefix)
 
     return app
 
