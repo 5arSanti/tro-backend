@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.app.core.config import settings
 from src.app.core.middleware import MaxRequestSizeMiddleware
 from src.app.health.health_controller import router as health_router
+from src.app.video.video_controller import router as video_router
 
 
 @asynccontextmanager
@@ -35,6 +36,7 @@ def create_app() -> FastAPI:
     app.add_middleware(MaxRequestSizeMiddleware)
 
     app.include_router(health_router, prefix=settings.api_v1_prefix)
+    app.include_router(video_router, prefix=settings.api_v1_prefix)
 
     return app
 
