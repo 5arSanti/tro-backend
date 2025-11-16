@@ -19,39 +19,50 @@ logger = logging.getLogger(__name__)
 
 
 class VideoService:
+    """Main service coordinating video-related operations."""
+
     def __init__(self, settings: Settings) -> None:
         self._settings: Settings = settings
 
-        project_root = Path(__file__).parent.parent.parent.parent.parent
-        model_path = project_root / "yolo-train-routes-optimization" / "my_model" / "my_model.pt"
-        assets_path = project_root / "yolo-train-routes-optimization" / "assets"
+        self._project_root: Path = Path(__file__).resolve().parents[4]
+        self._model_path: Path = (
+            self._project_root / "yolo-train-routes-optimization" / "my_model" / "my_model.pt"
+        )
+        self._assets_path: Path = self._project_root / "yolo-train-routes-optimization" / "assets"
 
         self._model_service: ModelService = ModelService()
         try:
-            self._model_service.initialize(model_path)
-        except Exception as e:
-            logger.warning(f"Model service initialization failed: {e}")
+            self._model_service.initialize(self._model_path)
+        except FileNotFoundError:
+            logger.warning(
+                "Model file not found at %s. Video streaming will be unavailable until the model is provided.",
+                self._model_path,
+            )
+        except Exception:  # pragma: no cover - unexpected initialisation errors
+            logger.exception("Unexpected error initialising the YOLO model service.")
+            raise
 
-        self._video_file_service: VideoFileService = VideoFileService(assets_path)
+        self._video_file_service: VideoFileService = VideoFileService(self._assets_path)
 
     def get_available_videos(self) -> VideoListSchema:
         try:
             video_files = self._video_file_service.list_video_files()
-
-            videos: list[VideoInfoSchema] = []
-            for video_file in video_files:
-                video_id = self._video_file_service.get_video_id(video_file)
-                videos.append(
-                    VideoInfoSchema(
-                        id=video_id,
-                        filename=video_file.name,
-                        name=f"Video {video_id.replace('video', '')}",
-                    )
-                )
-
-            return VideoListSchema(videos=videos)
         except Exception:
-            return VideoListSchema(videos=[])
+            logger.exception("Failed to list video files from %s", self._assets_path)
+            raise
+
+        videos: list[VideoInfoSchema] = []
+        for video_file in video_files:
+            video_id = self._video_file_service.get_video_id(video_file)
+            videos.append(
+                VideoInfoSchema(
+                    id=video_id,
+                    filename=video_file.name,
+                    name=f"Video {video_id.replace('video', '')}",
+                )
+            )
+
+        return VideoListSchema(videos=videos)
 
     async def process_video_stream(
         self, video_id: str, config: DetectionConfigSchema
@@ -64,7 +75,7 @@ class VideoService:
                 width, height = map(int, config.resolution.split("x"))
                 resolution = (width, height)
             except ValueError:
-                pass
+                logger.warning("Invalid resolution '%s'. Using original video dimensions.", config.resolution)
 
         stream_service = VideoStreamService(
             model_service=self._model_service,

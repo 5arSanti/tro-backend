@@ -1,11 +1,13 @@
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import StreamingResponse
+import logging
 
-from src.app.common.common_schema import ErrorSchema
+from fastapi import APIRouter, HTTPException
+
 from src.app.core.dependencies import SettingsDep
 from src.app.core.router import Controller
-from src.app.video.video_schema import DetectionConfigSchema, VideoListSchema
+from src.app.video.video_schema import VideoListSchema
 from src.app.video.video_service import VideoService
+
+logger = logging.getLogger(__name__)
 
 router: APIRouter = Controller("/videos", tags=["Videos"])
 
@@ -23,11 +25,9 @@ async def list_videos(settings: SettingsDep) -> VideoListSchema:
         service = VideoService(settings)
         result = service.get_available_videos()
         return result
-    except Exception as e:
-        print(f"ERROR in list_videos endpoint: {e}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error listing videos: {str(e)}") from e
+    except Exception as exc:
+        logger.exception("Failed to list available videos")
+        raise HTTPException(status_code=500, detail="Error listing videos") from exc
 
 
 # @router.get(

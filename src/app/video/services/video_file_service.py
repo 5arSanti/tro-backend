@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass
+
+logger = logging.getLogger(__name__)
 
 
 class VideoFileService:
@@ -20,29 +23,32 @@ class VideoFileService:
         if video_path.exists():
             return video_path
 
-        for ext in [".avi", ".mov", ".mkv", ".wmv"]:
+        for ext in (".avi", ".mov", ".mkv", ".wmv"):
             alt_path = self._assets_path / f"{video_id}{ext}"
             if alt_path.exists():
                 return alt_path
 
+        logger.error("Video '%s' not found in %s", video_id, self._assets_path)
         raise FileNotFoundError(f"Video {video_id} not found in {self._assets_path}")
 
     def list_video_files(self) -> list[Path]:
         if not self._assets_path.exists():
+            logger.warning("Assets path %s does not exist", self._assets_path)
             return []
 
         try:
-            all_files = list[Path](self._assets_path.glob("*"))
+            all_files = list(self._assets_path.glob("*"))
+        except Exception:  # pragma: no cover - unexpected filesystem failures
+            logger.exception("Failed to read assets directory %s", self._assets_path)
+            raise
 
-            video_files: list[Path] = []
-            for video_file in sorted(all_files):
-                if video_file.suffix.lower() in self._video_extensions and video_file.is_file():
-                    video_files.append(video_file)
-
-            return video_files
-        except Exception as e:
-            raise Exception(f"Error listing video files: {e}") from e
+        video_files = [
+            file_path
+            for file_path in all_files
+            if file_path.is_file() and file_path.suffix.lower() in self._video_extensions
+        ]
+        video_files.sort(key=lambda path: path.name)
+        return video_files
 
     def get_video_id(self, video_path: Path) -> str:
-        video_id = video_path.stem
-        return video_id
+        return video_path.stem
