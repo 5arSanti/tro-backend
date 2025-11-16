@@ -2,10 +2,16 @@ import logging
 from collections.abc import AsyncGenerator
 
 from src.app.common.constants import VIDEO_ASSETS_PATH, YOLO_MODEL_PATH
+from src.app.video.services.metrics_service import DetectionMetricsService
 from src.app.video.services.model_service import ModelService
 from src.app.video.services.video_file_service import VideoFileService
 from src.app.video.services.video_stream_service import VideoStreamService
-from src.app.video.video_schema import DetectionConfigSchema, VideoInfoSchema, VideoListSchema
+from src.app.video.video_schema import (
+    DetectionConfigSchema,
+    DetectionMetricsSchema,
+    VideoInfoSchema,
+    VideoListSchema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +23,7 @@ class VideoService:
 
         self._video_file_service = VideoFileService(self._assets_path)
         self._model_service: ModelService | None = None
+        self._metrics_service: DetectionMetricsService = DetectionMetricsService()
 
     def _get_model_service(self) -> ModelService:
         if self._model_service is None:
@@ -53,17 +60,33 @@ class VideoService:
         resolution: tuple[int, int] | None = None
         if config.resolution:
             try:
-                width, height = map[int](int, config.resolution.split("x"))
+                width, height = map(int, config.resolution.split("x"))
                 resolution = (width, height)
             except ValueError:
-                logger.warning("Invalid resolution '%s'. Using original video dimensions.", config.resolution)
+                logger.warning(
+                    "Invalid resolution '%s'. Using original video dimensions.", config.resolution
+                )
 
         stream_service = VideoStreamService(
             model_service=self._get_model_service(),
             video_path=video_path,
+            video_id=video_id,
             confidence_threshold=config.confidence_threshold,
+            metrics_service=self._metrics_service,
             resolution=resolution,
         )
 
         async for frame_bytes in stream_service.stream_frames():
             yield frame_bytes
+
+    async def subscribe_detection_metrics(
+        self, video_id: str
+    ) -> AsyncGenerator[DetectionMetricsSchema, None]:
+        async for metrics in self._metrics_service.subscribe(video_id):
+            yield DetectionMetricsSchema(
+                video_id=metrics.video_id,
+                timestamp=metrics.timestamp,
+                total_objects=metrics.total_objects,
+                person_count=metrics.person_count,
+                label_counts=dict[str, int](metrics.label_counts),
+            )

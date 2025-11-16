@@ -1,4 +1,4 @@
-from __future__ import annotations
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -51,3 +51,25 @@ class DetectionConfigSchema(BaseModel):
         default=None, description="Output resolution in format WxH (e.g., '640x480')"
     )
 
+
+class DetectionMetricsSchema(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "video_id": "video1",
+                "timestamp": "2025-11-16T22:15:30.123Z",
+                "total_objects": 7,
+                "person_count": 5,
+                "label_counts": {"person": 5, "backpack": 1, "cell phone": 1},
+            }
+        }
+    )
+
+    video_id: str = Field(..., description="Unique identifier of the video stream")
+    timestamp: datetime = Field(..., description="Timestamp of the detection event")
+    total_objects: int = Field(..., ge=0, description="Total number of objects detected")
+    person_count: int = Field(..., ge=0, description="Number of persons detected")
+    label_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description="Breakdown of detected objects by label",
+    )
