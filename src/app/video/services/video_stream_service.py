@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -108,7 +108,7 @@ class VideoStreamService:
         metrics = DetectionMetrics.from_summary(
             video_id=self._video_id,
             summary=summary,
-            timestamp=datetime.now(datetime.UTC),
+            timestamp=datetime.now(timezone.utc),
         )
 
         await self._metrics_service.publish(metrics)

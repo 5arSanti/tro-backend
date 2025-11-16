@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from collections.abc import Mapping
 
 from src.app.video.video_schema import DetectionMetricsSchema
@@ -29,7 +29,7 @@ class DetectionMetrics:
         *,
         timestamp: datetime | None = None,
     ) -> DetectionMetricsSchema:
-        metrics_timestamp = timestamp or datetime.now(datetime.UTC)
+        metrics_timestamp = timestamp or datetime.now(timezone.utc)
         return cls(
             video_id=video_id,
             timestamp=metrics_timestamp,
