@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import importlib
 from pathlib import Path
 from typing import Any
@@ -10,14 +8,8 @@ YOLOType = Any
 
 
 class ModelService:
-    _instance: ModelService | None = None
     _model: YOLOType | None = None
     _model_path: Path = YOLO_MODEL_PATH
-
-    def __new__(cls) -> ModelService:
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
 
     def set_model_path(self, model_path: Path) -> None:
         self._model_path = model_path

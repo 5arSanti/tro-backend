@@ -1,13 +1,6 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 import cv2
 import numpy as np
 from ultralytics import YOLO
-
-if TYPE_CHECKING:
-    pass
 
 
 class DetectionService:
@@ -64,9 +57,7 @@ class DetectionService:
         cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 2)
 
         label = f"{classname}: {int(confidence * 100)}%"
-        label_size, base_line = cv2.getTextSize(
-            label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1
-        )
+        label_size, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
         label_ymin = max(ymin, label_size[1] + 10)
 
@@ -87,4 +78,3 @@ class DetectionService:
             (0, 0, 0),
             1,
         )
-

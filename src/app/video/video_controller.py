@@ -2,7 +2,6 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from src.app.core.dependencies import SettingsDep
 from src.app.core.router import Controller
 from src.app.video.video_schema import VideoListSchema
 from src.app.video.video_service import VideoService
@@ -19,9 +18,9 @@ router: APIRouter = Controller("/videos", tags=["Videos"])
     description="Returns a list of all available videos for detection",
     responses={200: {"model": VideoListSchema}},
 )
-async def list_videos(settings: SettingsDep) -> VideoListSchema:
+async def list_videos() -> VideoListSchema:
     try:
-        service = VideoService(settings)
+        service = VideoService()
         result = service.get_available_videos()
         return result
     except Exception as exc:

@@ -1,13 +1,7 @@
-from __future__ import annotations
-
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from src.app.common.constants import VIDEO_ASSETS_PATH
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

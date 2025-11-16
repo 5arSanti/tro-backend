@@ -1,7 +1,3 @@
-"""Main video service that coordinates other services."""
-
-from __future__ import annotations
-
 import logging
 
 from src.app.common.constants import VIDEO_ASSETS_PATH
@@ -19,6 +15,8 @@ class VideoService:
 
     def get_available_videos(self) -> VideoListSchema:
         try:
+            print("list_video_files")
+            print(self._assets_path)
             video_files = self._video_file_service.list_video_files()
         except Exception:
             logger.exception("Failed to list video files from %s", self._assets_path)
