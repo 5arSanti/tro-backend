@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 class VideoService:
+    USB_CAMERA_ID = "usb0"
+    USB_CAMERA_FILENAME = "usb0"
+    USB_CAMERA_NAME = "Cámara USB en Vivo"
+    USB_CAMERA_SOURCE = 0
+
     def __init__(self) -> None:
         self._model_path = YOLO_MODEL_PATH
         self._assets_path = VIDEO_ASSETS_PATH
@@ -39,9 +44,18 @@ class VideoService:
             logger.exception("Failed to list video files from %s", self._assets_path)
             raise
 
-        videos: list[VideoInfoSchema] = []
+        videos: list[VideoInfoSchema] = [
+            VideoInfoSchema(
+                id=self.USB_CAMERA_ID,
+                filename=self.USB_CAMERA_FILENAME,
+                name=self.USB_CAMERA_NAME,
+            )
+        ]
         for video_file in video_files:
             video_id = self._video_file_service.get_video_id(video_file)
+            if video_id == self.USB_CAMERA_ID:
+                # Avoid duplicating the virtual USB stream if a file shares the same identifier.
+                continue
             videos.append(
                 VideoInfoSchema(
                     id=video_id,
@@ -55,7 +69,12 @@ class VideoService:
     async def process_video_stream(
         self, video_id: str, config: DetectionConfigSchema
     ) -> AsyncGenerator[bytes, None]:
-        video_path = self._video_file_service.find_video_file(video_id)
+        is_live_source = False
+        if video_id == self.USB_CAMERA_ID:
+            video_source = self.USB_CAMERA_SOURCE
+            is_live_source = True
+        else:
+            video_source = self._video_file_service.find_video_file(video_id)
 
         resolution: tuple[int, int] | None = None
         if config.resolution:
@@ -69,11 +88,12 @@ class VideoService:
 
         stream_service = VideoStreamService(
             model_service=self._get_model_service(),
-            video_path=video_path,
+            video_source=video_source,
             video_id=video_id,
             confidence_threshold=config.confidence_threshold,
             metrics_service=self._metrics_service,
             resolution=resolution,
+            is_live_source=is_live_source,
         )
 
         async for frame_bytes in stream_service.stream_frames():

@@ -17,30 +17,35 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
+VideoSource = Path | str | int
+
+
 class VideoStreamService:
     def __init__(
         self,
         model_service: ModelService,
-        video_path: Path,
+        video_source: VideoSource,
         video_id: str,
         confidence_threshold: float,
         metrics_service: DetectionMetricsService | None = None,
         resolution: tuple[int, int] | None = None,
+        is_live_source: bool = False,
     ) -> None:
         self._model_service: ModelService = model_service
-        self._video_path: Path = video_path
+        self._video_source: VideoSource = video_source
         self._video_id: str = video_id
         self._confidence_threshold: float = confidence_threshold
         self._resolution: tuple[int, int] | None = resolution
         self._cap: cv2.VideoCapture | None = None
         self._metrics_service: DetectionMetricsService | None = metrics_service
+        self._is_live_source: bool = is_live_source
 
     async def stream_frames(self) -> AsyncGenerator[bytes, None]:
         loop = asyncio.get_event_loop()
-        self._cap = await loop.run_in_executor(None, self._open_video, str(self._video_path))
+        self._cap = await loop.run_in_executor(None, self._open_video, self._video_source)
 
         if self._cap is None or not self._cap.isOpened():
-            raise RuntimeError(f"Failed to open video: {self._video_path}")
+            raise RuntimeError(f"Failed to open video source: {self._video_source}")
 
         try:
             model = self._model_service.get_model()
@@ -51,6 +56,9 @@ class VideoStreamService:
                 ret, frame = await loop.run_in_executor(None, self._cap.read)
 
                 if not ret:
+                    if self._is_live_source:
+                        await asyncio.sleep(0.01)
+                        continue
                     await loop.run_in_executor(None, self._cap.set, cv2.CAP_PROP_POS_FRAMES, 0)
                     ret, frame = await loop.run_in_executor(None, self._cap.read)
                     if not ret:
@@ -65,8 +73,13 @@ class VideoStreamService:
         finally:
             await self._cleanup()
 
-    def _open_video(self, video_path: str) -> cv2.VideoCapture:
-        cap = cv2.VideoCapture(video_path)
+    def _open_video(self, video_source: VideoSource) -> cv2.VideoCapture:
+        if isinstance(video_source, Path):
+            source = str(video_source)
+        else:
+            source = video_source
+
+        cap = cv2.VideoCapture(source)
         if self._resolution:
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._resolution[0])
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._resolution[1])
