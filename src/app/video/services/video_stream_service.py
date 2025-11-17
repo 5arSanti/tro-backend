@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -12,12 +13,15 @@ from src.app.video.interfaces.detection_metrics import DetectionMetrics, Detecti
 from src.app.video.services.detection_service import DetectionService
 from src.app.video.services.metrics_service import DetectionMetricsService
 from src.app.video.services.model_service import ModelService
+from src.app.routing.services.train_dispatch_service import train_dispatch_service
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 
 VideoSource = Path | str | int
+
+logger = logging.getLogger(__name__)
 
 
 class VideoStreamService:
@@ -125,3 +129,7 @@ class VideoStreamService:
         )
 
         await self._metrics_service.publish(metrics)
+        try:
+            train_dispatch_service.update_station_load(self._video_id, summary.person_count)
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to update dispatch plan for video '%s'", self._video_id)

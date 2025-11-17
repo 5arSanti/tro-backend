@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.app.core.config import settings
 from src.app.health.health_controller import router as health_router
+from src.app.routing.routing_controller import router as routing_router
 from src.app.video.video_controller import router as video_router
 
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router, prefix=settings.api_v1_prefix)
     app.include_router(video_router, prefix=settings.api_v1_prefix)
+    app.include_router(routing_router, prefix=settings.api_v1_prefix)
 
     return app
 
