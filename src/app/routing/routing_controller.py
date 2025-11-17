@@ -5,14 +5,13 @@ from src.app.routing.routing_schema import (
     DispatchPlanSchema,
     DispatchRequestSchema,
     StationSchema,
-    StationStatusSchema,
-    StationStatusesResponseSchema,
     StationsResponseSchema,
+    StationStatusesResponseSchema,
+    StationStatusSchema,
     TrainModelSchema,
     TrainModelsResponseSchema,
 )
 from src.app.routing.services.train_dispatch_service import train_dispatch_service
-
 
 router = Controller("/routing", tags=["Routing"])
 
@@ -79,6 +78,39 @@ def list_station_statuses() -> StationStatusesResponseSchema:
             )
         )
     return StationStatusesResponseSchema(stations=statuses)
+
+
+@router.get(
+    "/stations/{station_id}",
+    response_model=StationSchema,
+    summary="Get a specific station by ID",
+)
+def get_station(station_id: str) -> StationSchema:
+    station = train_dispatch_service.get_station(station_id)
+    if station is None:
+        raise HTTPException(status_code=404, detail=f"Station '{station_id}' not found")
+    return _station_to_schema(station)
+
+
+@router.get(
+    "/stations/{station_id}/status",
+    response_model=StationStatusSchema,
+    summary="Get the status of a specific station",
+)
+def get_station_status(station_id: str) -> StationStatusSchema:
+    state = train_dispatch_service.get_station_state(station_id)
+    if state is None:
+        raise HTTPException(status_code=404, detail=f"Station '{station_id}' not found")
+
+    station_schema = _station_to_schema(state.station)
+    dispatch_schema = _dispatch_to_schema(state.last_dispatch) if state.last_dispatch else None
+
+    return StationStatusSchema(
+        station=station_schema,
+        last_passenger_count=state.last_passenger_count,
+        last_updated=state.last_updated,
+        last_dispatch=dispatch_schema,
+    )
 
 
 @router.post(
