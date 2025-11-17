@@ -11,7 +11,7 @@ FastAPI application with strict type checking and modern Python practices.
 
 ### Installation
 
-#### Using Docker Compose (Recommended)
+#### Using Docker Compose
 
 ```bash
 docker-compose up --build
@@ -69,7 +69,8 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 
-# Windows
+# Instalacion en Windows
+```bash
 python3 -m venv .venv
 
 # Actívalo
@@ -78,3 +79,11 @@ source .venv/Scripts/activate
 # Instala las dependencias
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+```
+
+# Inicio de la API
+```bash
+source .venv/Scripts/activate
+
+python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+```
