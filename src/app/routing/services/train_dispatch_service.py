@@ -95,8 +95,16 @@ class TrainDispatchService:
     def _build_station_configs(self) -> dict[str, StationConfig]:
         return {
             "station_sur": StationConfig(
-                id="station_sur",
-                name="Estación Sur",
+                id="station_sur_usb0",
+                name="Estación Sur USB0",
+                line="Línea 3",
+                camera_id="usb0",
+                travel_time_seconds=210,
+                supported_train_ids=("light", "medium", "heavy"),
+            ),
+            "station_sur_usb1": StationConfig(
+                id="station_sur_usb1",
+                name="Estación Sur USB1",
                 line="Línea 3",
                 camera_id="usb1",
                 travel_time_seconds=210,
