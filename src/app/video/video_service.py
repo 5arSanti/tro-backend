@@ -22,8 +22,8 @@ class VideoService:
     USB_CAMERA_SOURCE_ENV = "USB_CAMERA_SOURCE"
     USB_CAMERA_NAME_ENV = "USB_CAMERA_NAME"
 
-    DEFAULT_USB_CAMERA_ID = "usb1"
-    DEFAULT_USB_CAMERA_SOURCE = "usb1"
+    DEFAULT_USB_CAMERA_ID = "usb0"
+    DEFAULT_USB_CAMERA_SOURCE = "usb0"
     DEFAULT_USB_CAMERA_NAME = "Cámara USB en Vivo"
 
     def __init__(self) -> None:
